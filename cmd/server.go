@@ -8,7 +8,7 @@ import (
 	"github.com/toucan-labs/ggv/internal/parser"
 )
 
-var versionCmd = &cobra.Command{
+var serverCommand = &cobra.Command{
 	Use:   "serve",
 	Short: "",
 	Long:  ``,
@@ -17,8 +17,12 @@ var versionCmd = &cobra.Command{
 	},
 }
 
+var pkgCfg string
+
 func init() {
-	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(serverCommand)
+	rootCmd.PersistentFlags().StringVar(&pkgCfg, "pkg", "./", "")
+
 }
 
 func serve() {
@@ -37,7 +41,7 @@ func serve() {
 }
 
 func GenData(c *gin.Context) {
-	n := "./"
+	n := pkgCfg
 	builder := parser.NewParser()
 	pkgs := builder.Parse(n)
 	g := parser.NewGraph()
