@@ -32,12 +32,14 @@ func serve() {
 		})
 	})
 
-	router.GET("/gen", func(c *gin.Context) {
-		n := "./"
-		builder := parser.NewParser()
-		pkgs := builder.Parse(n)
-		g := parser.NewGraph()
-		c.JSON(http.StatusOK, g.Data(pkgs))
-	})
+	router.GET("/gen", GenData)
 	router.Run(":8080")
+}
+
+func GenData(c *gin.Context) {
+	n := "./"
+	builder := parser.NewParser()
+	pkgs := builder.Parse(n)
+	g := parser.NewGraph()
+	c.JSON(http.StatusOK, g.Data(pkgs))
 }
