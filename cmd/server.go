@@ -23,7 +23,7 @@ func init() {
 
 func serve() {
 	router := gin.Default()
-	router.Static("/assets", "../assets")
+	router.Static("/assets", "./assets")
 	router.LoadHTMLGlob("./templates/*")
 
 	router.GET("/index", func(c *gin.Context) {
@@ -36,13 +36,8 @@ func serve() {
 		n := "./"
 		builder := parser.NewParser()
 		pkgs := builder.Parse(n)
-
-		jsobResult := map[string]interface{}{}
-		for _, p := range pkgs {
-			jsobResult[p.Dir] = p.Funcs()
-		}
-
-		c.JSON(http.StatusOK, jsobResult)
+		g := parser.NewGraph()
+		c.JSON(http.StatusOK, g.Data(pkgs))
 	})
 	router.Run(":8080")
 }

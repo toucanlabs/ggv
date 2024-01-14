@@ -39,7 +39,7 @@ func (p *Parser) Parse(pkgName string) []*Pkg {
 		log.Fatalf("failed to get cwd: %s", err)
 	}
 
-	var pkgs map[string]*build.Package = make(map[string]*build.Package)
+	var pkgs map[string]*Pkg = make(map[string]*Pkg)
 
 	err = p.lookupPackage(pkgs, cwd, pkgName, func(pk *build.Package) bool {
 		paths := []string{
@@ -60,17 +60,24 @@ func (p *Parser) Parse(pkgName string) []*Pkg {
 		log.Fatal(err)
 	}
 	list := []*Pkg{}
-	for k, el := range pkgs {
-		list = append(list, &Pkg{
-			Dir:   el.Dir,
-			Name:  p.normalizeVendor(k),
-			Files: el.GoFiles,
-		})
+	for _, el := range pkgs {
+		list = append(list, el)
 	}
 	return list
 }
 
-func (p *Parser) lookupPackage(pkgs map[string]*build.Package, root string, pkgName string, isIgnore PkgRule) (err error) {
+func (p *Parser) getPkg(root string, pkgName string, isIgnore PkgRule) *build.Package {
+	pkg, buildErr := p.ctx.Import(pkgName, root, 0)
+	if buildErr != nil {
+		return nil
+	}
+	if isIgnore(pkg) {
+		return nil
+	}
+	return pkg
+}
+
+func (p *Parser) lookupPackage(pkgs map[string]*Pkg, root string, pkgName string, isIgnore PkgRule) (err error) {
 	pkg, buildErr := p.ctx.Import(pkgName, root, 0)
 	if buildErr != nil {
 		err = fmt.Errorf("failed to import %s:\n%s", pkgName, buildErr)
@@ -81,10 +88,20 @@ func (p *Parser) lookupPackage(pkgs map[string]*build.Package, root string, pkgN
 		return nil
 	}
 
+	newPkg := &Pkg{
+		Dir:   pkg.Dir,
+		Name:  p.normalizeVendor(pkgName),
+		Files: pkg.GoFiles,
+	}
+
 	importPath := p.normalizeVendor(pkgName)
-	pkgs[importPath] = pkg
+	pkgs[importPath] = newPkg
 
 	for _, imp := range p.getImports(pkg) {
+		imported := p.getPkg(pkg.Dir, imp, isIgnore)
+		if imported != nil && !isIgnore(imported) {
+			newPkg.UsagePkgs = append(newPkg.UsagePkgs, imp)
+		}
 		if _, ok := pkgs[imp]; !ok {
 			err = p.lookupPackage(pkgs, pkg.Dir, imp, isIgnore)
 			if err != nil {
