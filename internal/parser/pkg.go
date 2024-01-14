@@ -34,7 +34,7 @@ func (p *Pkg) Funcs() (result []interface{}) {
 }
 
 type Graph interface {
-	Data(pkgs []*Pkg) map[string]interface{}
+	Data(includeInternalFuncs bool, pkgs []*Pkg) map[string]interface{}
 }
 
 func NewGraph() Graph {
@@ -43,7 +43,7 @@ func NewGraph() Graph {
 
 type graph struct{}
 
-func (g *graph) Data(pkgs []*Pkg) (result map[string]interface{}) {
+func (g *graph) Data(includeInternalFuncs bool, pkgs []*Pkg) (result map[string]interface{}) {
 	nodes := []interface{}{}
 	links := []interface{}{}
 	for _, e := range pkgs {
@@ -59,17 +59,19 @@ func (g *graph) Data(pkgs []*Pkg) (result map[string]interface{}) {
 			})
 		}
 
-		for _, el := range e.Funcs() {
-			nodes = append(nodes, map[string]interface{}{
-				"id":    el,
-				"val":   el,
-				"group": 2,
-			})
+		if includeInternalFuncs {
+			for _, el := range e.Funcs() {
+				nodes = append(nodes, map[string]interface{}{
+					"id":    el,
+					"val":   el,
+					"group": 2,
+				})
 
-			links = append(links, map[string]interface{}{
-				"source": e.Name,
-				"target": el,
-			})
+				links = append(links, map[string]interface{}{
+					"source": e.Name,
+					"target": el,
+				})
+			}
 		}
 
 	}

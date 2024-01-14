@@ -18,10 +18,12 @@ var serverCommand = &cobra.Command{
 }
 
 var pkgCfg string
+var internalFunc bool
 
 func init() {
 	rootCmd.AddCommand(serverCommand)
 	rootCmd.PersistentFlags().StringVar(&pkgCfg, "pkg", "./", "")
+	rootCmd.PersistentFlags().BoolVar(&internalFunc, "internal", false, "")
 
 }
 
@@ -45,5 +47,5 @@ func GenData(c *gin.Context) {
 	builder := parser.NewParser()
 	pkgs := builder.Parse(n)
 	g := parser.NewGraph()
-	c.JSON(http.StatusOK, g.Data(pkgs))
+	c.JSON(http.StatusOK, g.Data(internalFunc, pkgs))
 }
