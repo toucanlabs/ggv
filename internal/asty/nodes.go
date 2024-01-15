@@ -3,6 +3,8 @@ package asty
 import (
 	"encoding/json"
 	"go/ast"
+	"log"
+	"strings"
 )
 
 type Node struct {
@@ -209,6 +211,22 @@ type CallExprNode struct {
 	Ellipsis *PositionNode `json:"Ellipsis,omitempty"`
 	Rparen   *PositionNode `json:"Rparen,omitempty"`
 }
+
+func (c *CallExprNode) GetFunName() string {
+	switch expr := c.Fun.(type) {
+	case *SelectorExprNode:
+		var names []string
+		if ident, ok := expr.X.(*IdentNode); ok {
+			names = append(names, ident.Name)
+		}
+		names = append(names, expr.Sel.Name)
+		return strings.Join(names, "::")
+	default:
+		log.Println("implement me", expr)
+		return ""
+	}
+}
+
 type CallExprNodeAlias struct {
 	Node
 	Fun      json.RawMessage

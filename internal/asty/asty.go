@@ -30,7 +30,7 @@ type Options struct {
 	WithImports    bool
 }
 
-func ParseFile(input string, options Options) map[any]any {
+func ParseFile(input string, options Options) (map[any]any, map[any][]any) {
 	marshaller := NewAstParser(options)
 
 	mode := parser.SkipObjectResolution
@@ -40,15 +40,15 @@ func ParseFile(input string, options Options) map[any]any {
 
 	inFile, closeIn, err := OpenRead(input)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
 	defer closeIn()
 
 	tree, err := parser.ParseFile(marshaller.FileSet(), input, inFile, mode)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
 
 	marshaller.ParseFile(tree)
-	return marshaller.internalFuncs
+	return marshaller.internalFuncs, marshaller.refFuncs
 }
