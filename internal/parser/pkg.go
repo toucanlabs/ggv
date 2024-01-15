@@ -14,19 +14,28 @@ type Pkg struct {
 	Files     []string
 }
 
-func (p *Pkg) Funcs() (result []interface{}) {
+func (p *Pkg) Funcs() (nodes, links []interface{}) {
 	for _, el := range p.Files {
 		filepathString := filepath.Join(p.Dir, el)
-		// return external, internal funcs in file
-		jsonResult := asty.ParseFile(filepathString, asty.Options{
+		_, ref := asty.ParseFile(filepathString, asty.Options{
 			WithPositions:  false,
 			WithComments:   false,
 			WithReferences: true,
 			WithImports:    false,
 		})
 
-		for k, _ := range jsonResult {
-			result = append(result, fmt.Sprintf("%s::%s", el, k))
+		for internalFunName, list := range ref {
+			if len(list) > 0 {
+				fn := fmt.Sprintf("%s::%s", el, internalFunName)
+				nodes = append(nodes, fn)
+				for _, el := range list {
+					nodes = append(nodes, el)
+					links = append(links, map[string]interface{}{
+						"source": fn,
+						"target": el,
+					})
+				}
+			}
 		}
 	}
 
@@ -60,18 +69,19 @@ func (g *graph) Data(includeInternalFuncs bool, pkgs []*Pkg) (result map[string]
 		}
 
 		if includeInternalFuncs {
-			for _, el := range e.Funcs() {
+			n, l := e.Funcs()
+			for _, el := range n {
 				nodes = append(nodes, map[string]interface{}{
 					"id":    el,
 					"val":   el,
 					"group": 2,
 				})
-
 				links = append(links, map[string]interface{}{
 					"source": e.Name,
 					"target": el,
 				})
 			}
+			links = append(links, l...)
 		}
 
 	}

@@ -3,8 +3,6 @@ package asty
 import (
 	"go/ast"
 	"go/token"
-	"log"
-	"reflect"
 )
 
 type AstParser struct {
@@ -13,6 +11,7 @@ type AstParser struct {
 	references    map[any]any
 	refcount      int
 	internalFuncs map[any]any
+	refFuncs      map[any][]any
 	externalFuncs map[any]any
 }
 
@@ -22,6 +21,7 @@ func NewAstParser(options Options) *AstParser {
 		fset:          token.NewFileSet(),
 		references:    make(map[any]any),
 		internalFuncs: make(map[any]any),
+		refFuncs:      make(map[any][]any),
 		externalFuncs: make(map[any]any),
 		refcount:      0,
 	}
@@ -227,6 +227,11 @@ func (m *AstParser) ParseExpr(root string, node ast.Expr) IExprNode {
 	switch expr := node.(type) {
 	case *ast.CallExpr:
 		result := m.ParseCallExpr(root, expr)
+		if _, ok := m.refFuncs[root]; ok {
+			m.refFuncs[root] = append(m.refFuncs[root], result.GetFunName())
+		} else {
+			m.refFuncs[root] = []any{}
+		}
 		m.externalFuncs[result.RefId] = result
 		return result
 	case *ast.FuncLit:
@@ -270,7 +275,7 @@ func (m *AstParser) ParseExpr(root string, node ast.Expr) IExprNode {
 	case *ast.ChanType:
 		return m.ParseChanType(root, expr)
 	default:
-		log.Println("implement me")
+		// log.Println("implement me")
 		return nil
 	}
 }
@@ -485,7 +490,7 @@ func (m *AstParser) ParseStmt(root string, node ast.Stmt) IStmtNode {
 	case *ast.ExprStmt:
 		return m.ParseExprStmt(root, stmt)
 	default:
-		log.Println("implement me " + reflect.TypeOf(stmt).String())
+		// log.Println("implement me " + reflect.TypeOf(stmt).String())
 		return nil
 	}
 }
@@ -523,7 +528,7 @@ func (m *AstParser) ParseDecl(node ast.Decl) IDeclNode {
 	case *ast.FuncDecl:
 		return m.ParseFuncDecl(decl)
 	default:
-		log.Println("implement me:", decl)
+		// log.Println("implement me:", decl)
 		return nil
 	}
 }
